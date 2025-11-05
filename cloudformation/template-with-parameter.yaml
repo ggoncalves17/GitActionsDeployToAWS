@@ -25,7 +25,7 @@ Metadata:
           default: "Github configurations"
         Parameters:
           - GithubRepoName
-          - ThumbprintList   
+          - IDCProviderARN
 Parameters:
   VpcCIDR:
     Description: Please enter the IP range (CIDR notation) for this VPC
@@ -72,13 +72,12 @@ Parameters:
     Type: Number
     Default: 2
     Description: Enter the Max Size for the ASG
-  ThumbprintList:
-    Type: String 
-    Default: 6938fd4d98bab03faadb97b34396831e3780aea1
-    Description: A thumbprint of an Open ID Connector is a SHA1 hash of the public certificate of the host
   GithubRepoName:
     Type: String 
     Description: GitHub repository name Ex-TestUser/TestCodeDeploy
+  IDCProviderARN:
+    Type: String 
+    Description: OIDC Provider ARN for GitHub Actions
 
 Resources:
   VPC:
@@ -244,25 +243,17 @@ Resources:
                 Action: 
                 - "s3:getObject"
                 Resource: !Sub arn:${AWS::Partition}:s3:::${WebappDeploymentBucket}/*
-  IDCProvider:
-      Type: AWS::IAM::OIDCProvider
-      Properties:
-          Url: "https://token.actions.githubusercontent.com"
-          ClientIdList:
-            - "sts.amazonaws.com"
-          ThumbprintList:
-             - !Ref ThumbprintList 
   GitHubIAMRole:
       Type: AWS::IAM::Role
       Properties:
           Path: "/"
-          RoleName: CodeDeployRoleforGitHub
+          RoleName: CodeDeployRoleforGitHub-Guilherme
           AssumeRolePolicyDocument:
              Statement:
                - Effect: Allow
                  Action: sts:AssumeRoleWithWebIdentity
                  Principal:
-                   Federated: !Ref IDCProvider
+                   Federated: !Ref IDCProviderARN
                  Condition:
                    StringLike:
                      token.actions.githubusercontent.com:sub: !Sub repo:${GithubRepoName}:*
